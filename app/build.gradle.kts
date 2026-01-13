@@ -4,7 +4,7 @@ plugins {
 
 android {
     namespace = "com.knight.ecolens"
-    compileSdk = 34 // High enough for 2026 standards
+    compileSdk = 36 // High enough for 2026 standards
 
     defaultConfig {
         applicationId = "com.knight.ecolens"
@@ -27,19 +27,24 @@ android {
     }
     compileOptions {
         // Essential for using modern Java features like Records or Lambdas.
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 dependencies {
 
+    implementation(libs.viewfinder.core)
+//    implementation(libs.camera.viewfinder.core)
+    // Forcing a version compatible with API 34
+//    implementation("androidx.activity:activity:1.9.3")
+
     //CameraX (Essential for the "Eyes" of EcoLens)
-    val cameraVersion = "1.4.0"
+    val cameraVersion = "1.4.1"
     implementation("androidx.camera:camera-core:$cameraVersion")
     implementation("androidx.camera:camera-camera2:$cameraVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraVersion")
-    implementation("android.camera:camera-view:$cameraVersion")
+    implementation("androidx.camera:camera-view:$cameraVersion")
 
     // ML kit (The "Brain" of EcoLens)
     implementation("com.google.mlkit:object-detection:17.0.2")

@@ -7,6 +7,8 @@ appcompat = "1.7.1"
 material = "1.13.0"
 activity = "1.11.0"
 constraintlayout = "2.2.1"
+viewfinderCore = "1.5.2"
+cameraViewfinderCore = "1.4.0-alpha07"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -16,6 +18,8 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+viewfinder-core = { group = "androidx.camera.viewfinder", name = "viewfinder-core", version.ref = "viewfinderCore" }
+camera-viewfinder-core = { group = "androidx.camera", name = "camera-viewfinder-core", version.ref = "cameraViewfinderCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
