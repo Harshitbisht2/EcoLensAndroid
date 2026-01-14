@@ -129,12 +129,23 @@ public class MainActivity extends AppCompatActivity {
                                     graphicOverlay.setConfiguration(imageProxy.getWidth(), imageProxy.getHeight());
 
                                     List<RectF> boxes = new ArrayList<>();
+                                    List<String> labels = new ArrayList<>();
                                     for(DetectedObject obj: detectedObjects){
                                         // Adding the bounding box of the detected object
                                         boxes.add(new RectF(obj.getBoundingBox()));
+
+                                        //getting classification label (if available)
+                                        String labelText = "Unknown Item";
+                                        if(!obj.getLabels().isEmpty()){
+                                            DetectedObject.Label firstLabel = obj.getLabels().get(0);
+                                            labelText = firstLabel.getText(); //like "food", "Fashion Good"
+                                        }
+                                        /// Logic: Map the general label to a recycling category
+                                        String recyclingCategory = mapToRecycling(labelText);
+                                        labels.add(recyclingCategory);
                                     }
                                     //pushing the boxes to our GraphicOverlay to draw them
-                                    graphicOverlay.updateObjects(boxes);
+                                    graphicOverlay.updateObjects(boxes, labels);
                                 })
                                 .addOnFailureListener(e -> e.printStackTrace())
                                 .addOnCompleteListener(result -> {
@@ -151,5 +162,32 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }, ContextCompat.getMainExecutor(this));
+    }
+
+    private String mapToRecycling(String mlKitLabel){
+        switch (mlKitLabel){
+            case "Food":
+            case "Plant":
+            case "fruit":
+            case "vegetable":
+                return "COMPOSTABLE (Organic)";
+            case "paper":
+            case "cardboard":
+            case "magazine":
+            case "book":
+                return "RECYCLE (Paper/Fiber)";
+            case "can":
+            case "metal":
+            case "glass":
+            case "cup":
+                return "RECYCLE (Glass/metal";
+            case "electronic":
+            case "gadget":
+            case "mobile":
+            case "computer":
+                return "HAZARDOUS (E-Waste Center)";
+            default:
+                return "SCANNING WASTE..."+mlKitLabel;
+        }
     }
 }

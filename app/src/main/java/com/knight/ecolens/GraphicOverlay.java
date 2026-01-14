@@ -26,6 +26,9 @@ public class GraphicOverlay extends View{
     private final Object lock = new Object();
     private final List<RectF> detectedObjects = new ArrayList<>();
     private final Paint boxPaint;
+    private final Paint textPaint;
+//    private final Paint textBackgroundPaint;
+    private final List<String> detectedLabels = new ArrayList<>(); // To store names
 
     //Scaling factors
     private float scaleX = 1.0f;
@@ -34,12 +37,20 @@ public class GraphicOverlay extends View{
     public GraphicOverlay(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        //Define how your "Bounding Box" looks
+        // Box Paint
         boxPaint = new Paint();
         boxPaint.setColor(Color.GREEN);
         boxPaint.setStyle(Paint.Style.STROKE);
         boxPaint.setStrokeWidth(8.0f);
         boxPaint.setAntiAlias(true);
+
+        //Text paint for labels
+        textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(30.0f);
+        textPaint.setFakeBoldText(true);
+//        textPaint.setAntiAlias(true);
+
     }
 
     public void setConfiguration(int imageWidth, int imageHeight){
@@ -53,17 +64,22 @@ public class GraphicOverlay extends View{
 
         //This method is called by the AI logic to update the squares on the screen.
 
-        public void updateObjects(List<RectF> objects){
+        public void updateObjects(List<RectF> objects, List<String> labels){
             synchronized (lock){
                 detectedObjects.clear();
+                detectedLabels.clear();
 
-                for(RectF rect: objects){
+                for(int i = 0; i < objects.size(); i++){
                     //Mapping the coordinates from AI-space to Screen-space
+                    RectF rect = objects.get(i);
                     float left = rect.left * scaleX;
                     float top = rect.top * scaleY;
                     float right = rect.right * scaleX;
                     float bottom = rect.bottom * scaleY;
+                    //adding box on the screen
                     detectedObjects.add(new RectF(left, top, right, bottom));
+                    //adding label corresponding to the box
+                    detectedLabels.add(labels.get(i));
                 }
             }
             // Force the View to redraw itself on the screen
@@ -75,9 +91,35 @@ public class GraphicOverlay extends View{
             super.onDraw(canvas);
 
             synchronized (lock) {
-                for (RectF rect : detectedObjects){
+                for (int i=0; i<detectedObjects.size(); i++){
+                    RectF rect = detectedObjects.get(i);
+                    String label = detectedLabels.get(i);
+
+                    //Dynamic Color Logic
+                    if(label.contains("COMPOST")){
+                        boxPaint.setColor(Color.GREEN);
+                    }else if (label.contains("RECYCLE")) {
+                        boxPaint.setColor(Color.GREEN);
+                    } else if (label.contains("HAZARDOUS")) {
+                        boxPaint.setColor(Color.GREEN);
+                    } else{
+                        boxPaint.setColor(Color.YELLOW);
+                    }
+
+                    Paint labelBgPaint = new Paint();
+                    labelBgPaint.setColor(Color.parseColor("#80000000")); // semi transparent black
+                    labelBgPaint.setStyle(Paint.Style.FILL);
+
+                    float textWidth = textPaint.measureText(label);
+                    // Drawing a small background rectangle
+                    canvas.drawRect(rect.left, rect.top -55, rect.left + textWidth + 20, rect.top - 5, labelBgPaint);
+
+
                     //Draw the square on the canvas
                     canvas.drawRect(rect, boxPaint);
+
+                    //Draw Label text slightly above the box
+                    canvas.drawText(label, rect.left +10, rect.top - 25, textPaint);
                 }
             }
         }
