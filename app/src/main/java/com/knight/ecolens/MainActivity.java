@@ -124,6 +124,10 @@ public class MainActivity extends AppCompatActivity {
                         // Process the image
                         objectDetector.process(image)
                                 .addOnSuccessListener(detectedObjects -> {
+                                    // telling the object the image size (for coordinate scaling)
+                                    // we use width/height of the imageProxy
+                                    graphicOverlay.setConfiguration(imageProxy.getWidth(), imageProxy.getHeight());
+
                                     List<RectF> boxes = new ArrayList<>();
                                     for(DetectedObject obj: detectedObjects){
                                         // Adding the bounding box of the detected object

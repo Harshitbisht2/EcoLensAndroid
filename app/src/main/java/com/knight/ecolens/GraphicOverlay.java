@@ -27,6 +27,10 @@ public class GraphicOverlay extends View{
     private final List<RectF> detectedObjects = new ArrayList<>();
     private final Paint boxPaint;
 
+    //Scaling factors
+    private float scaleX = 1.0f;
+    private float scaleY = 1.0f;
+
     public GraphicOverlay(Context context, AttributeSet attrs) {
         super(context, attrs);
 
@@ -38,12 +42,29 @@ public class GraphicOverlay extends View{
         boxPaint.setAntiAlias(true);
     }
 
+    public void setConfiguration(int imageWidth, int imageHeight){
+        // Since the camera is usually rotated 90 degrees, we swap width/height to match the vertical screen orientation.
+
+        synchronized (lock) {
+            this.scaleX = (float) getWidth() / (float) imageHeight;
+            this.scaleY = (float) getHeight() / (float) imageWidth;
+        }
+    }
+
         //This method is called by the AI logic to update the squares on the screen.
 
         public void updateObjects(List<RectF> objects){
             synchronized (lock){
                 detectedObjects.clear();
-                detectedObjects.addAll(objects);
+
+                for(RectF rect: objects){
+                    //Mapping the coordinates from AI-space to Screen-space
+                    float left = rect.left * scaleX;
+                    float top = rect.top * scaleY;
+                    float right = rect.right * scaleX;
+                    float bottom = rect.bottom * scaleY;
+                    detectedObjects.add(new RectF(left, top, right, bottom));
+                }
             }
             // Force the View to redraw itself on the screen
             postInvalidate();
