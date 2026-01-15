@@ -35,12 +35,17 @@ android {
 dependencies {
 
     implementation(libs.viewfinder.core)
-//    implementation(libs.camera.viewfinder.core)
-    // Forcing a version compatible with API 34
-//    implementation("androidx.activity:activity:1.9.3")
+    implementation(libs.room.runtime.android)
+
+    val roomVersion = "2.8.4" // current stable version in 2026
+    implementation("androidx.room:room-runtime:$roomVersion")
+    annotationProcessor("androidx.room:room-compiler:$roomVersion")
+
+    //for testing and better Java integration
+    implementation("androidx.room:room-common:$roomVersion")
 
     //CameraX (Essential for the "Eyes" of EcoLens)
-    val cameraVersion = "1.4.1"
+    val cameraVersion = "1.5.2"
     implementation("androidx.camera:camera-core:$cameraVersion")
     implementation("androidx.camera:camera-camera2:$cameraVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraVersion")

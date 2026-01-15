@@ -9,6 +9,7 @@ activity = "1.11.0"
 constraintlayout = "2.2.1"
 viewfinderCore = "1.5.2"
 cameraViewfinderCore = "1.4.0-alpha07"
+roomRuntimeAndroid = "2.8.4"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -20,6 +21,7 @@ activity = { group = "androidx.activity", name = "activity", version.ref = "acti
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 viewfinder-core = { group = "androidx.camera.viewfinder", name = "viewfinder-core", version.ref = "viewfinderCore" }
 camera-viewfinder-core = { group = "androidx.camera", name = "camera-viewfinder-core", version.ref = "cameraViewfinderCore" }
+room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

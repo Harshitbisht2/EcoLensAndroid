@@ -91,9 +91,15 @@ public class GraphicOverlay extends View{
             super.onDraw(canvas);
 
             synchronized (lock) {
+
+                //log to check if we are actually trying to draw anything
+                android.util.Log.d("GraphicOverlay", "Drawing" + detectedObjects.size() + "objects");
                 for (int i=0; i<detectedObjects.size(); i++){
                     RectF rect = detectedObjects.get(i);
                     String label = detectedLabels.get(i);
+
+                    //log to check the coordinates we are using to draw
+                    android.util.Log.d("GraphicOverlay", "Drawing box at: " + rect.left + "," + rect.top + "Label: " + label);
 
                     //Dynamic Color Logic
                     if(label.contains("COMPOST")){
@@ -123,6 +129,41 @@ public class GraphicOverlay extends View{
                 }
             }
         }
+
+
+        //Interface to communicate the click back to MainActivity
+        public interface OnObjectClickListener {
+            void onObjectClick(String label, String category);
+        }
+
+        private OnObjectClickListener listener;
+
+    public void setOnObjectClickListener(OnObjectClickListener listener){
+        this.listener = listener;
+    }
+
+    @Override
+    public boolean onTouchEvent(android.view.MotionEvent event) {
+        if (event.getAction() == android.view.MotionEvent.ACTION_DOWN){
+            float x = event.getX();
+            float y = event.getY();
+
+            synchronized (lock){
+                for (int i=0; i<detectedObjects.size(); i++){
+                    RectF rect = detectedObjects.get(i);
+                    // Checking if the touch coordinates (x,y) are inside this rectangle
+                    if(rect.contains(x,y)){
+                        if(listener != null){
+                            listener.onObjectClick(detectedLabels.get(i), "CategoryPlaceholder");
+                            return true; // click handled
+                        }
+                    }
+                }
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
 
 
 }

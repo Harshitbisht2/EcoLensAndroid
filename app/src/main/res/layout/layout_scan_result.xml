@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:padding="24dp"
+    >
+
+<!--    handle at the top to show it's draggable-->
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:background="#DDDDDD"
+        />
+
+    <TextView
+        android:id="@+id/tvDetectedObject"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Detected Item"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        />
+
+    <TextView
+        android:id="@+id/tvInstructions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingExtra="4dp"
+        android:text="Processing instructions..."
+        android:textColor="#555555"
+        android:textSize="16sp"
+        />
+
+<!--    Button that will change color dynamically-->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnConfirmLog"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="24dp"
+        android:text="DONE"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        app:cornerRadius="12dp"
+        />
+
+</LinearLayout>

@@ -1,16 +1,23 @@
 package com.knight.ecolens;
 
+import static com.knight.ecolens.R.*;
+
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.objects.DetectedObject;
 import com.google.mlkit.vision.objects.ObjectDetection;
 import com.google.mlkit.vision.objects.ObjectDetector;
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions;
 import androidx.camera.core.ImageAnalysis;
+
+import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.RectF;
 import java.util.ArrayList;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.Manifest;
 import androidx.activity.EdgeToEdge;
@@ -37,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private ObjectDetector objectDetector;
     private GraphicOverlay graphicOverlay;
     private PreviewView previewView;
+    private Button historyButton;
+    private boolean isSheetVisible = false;
 
     // A modern way to ask for permissions in 2026
     private final ActivityResultLauncher<String> requestPermissionLauncher =
@@ -56,17 +65,24 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        historyButton = findViewById(id.btnHistory);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
+        historyButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, HistoryActivity.class);
+            startActivity(intent);
+        });
+
         previewView = findViewById(R.id.previewView);
 
         // check if we already have permission, if not ask for it
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
-            startCamera();
+            previewView.post(() ->startCamera());
         }else {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA);
         }
@@ -81,6 +97,14 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the object detector
         objectDetector = ObjectDetection.getClient(options);
         graphicOverlay = findViewById(R.id.graphicOverlay);
+
+        graphicOverlay.setOnObjectClickListener((label, category) -> {
+            //showing the detailed sheet when a box is clicked
+            if(!isSheetVisible){
+                isSheetVisible = true;
+                showDetailsSheet(label, category);
+            }
+        });
     }
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
@@ -126,23 +150,26 @@ public class MainActivity extends AppCompatActivity {
                                 .addOnSuccessListener(detectedObjects -> {
                                     // telling the object the image size (for coordinate scaling)
                                     // we use width/height of the imageProxy
+                                    android.util.Log.d("EcoLens", "Objects found: " + detectedObjects.size());
                                     graphicOverlay.setConfiguration(imageProxy.getWidth(), imageProxy.getHeight());
 
                                     List<RectF> boxes = new ArrayList<>();
                                     List<String> labels = new ArrayList<>();
+
                                     for(DetectedObject obj: detectedObjects){
                                         // Adding the bounding box of the detected object
                                         boxes.add(new RectF(obj.getBoundingBox()));
 
                                         //getting classification label (if available)
-                                        String labelText = "Unknown Item";
+                                        String detectedLabel = "Unknown Item";
+                                        //SAFE CHECK: Ensure labels exist before accessing them
                                         if(!obj.getLabels().isEmpty()){
-                                            DetectedObject.Label firstLabel = obj.getLabels().get(0);
-                                            labelText = firstLabel.getText(); //like "food", "Fashion Good"
+                                            detectedLabel = obj.getLabels().get(0).getText();
+                                             //like "food", "Fashion Good"
                                         }
-                                        /// Logic: Map the general label to a recycling category
-                                        String recyclingCategory = mapToRecycling(labelText);
-                                        labels.add(recyclingCategory);
+
+                                        // Logic: Map the general label to a recycling category
+                                        labels.add(mapToRecycling((detectedLabel)));
                                     }
                                     //pushing the boxes to our GraphicOverlay to draw them
                                     graphicOverlay.updateObjects(boxes, labels);
@@ -165,9 +192,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String mapToRecycling(String mlKitLabel){
-        switch (mlKitLabel){
-            case "Food":
-            case "Plant":
+        switch (mlKitLabel.toLowerCase()){
+            case "food":
+            case "plant":
             case "fruit":
             case "vegetable":
                 return "COMPOSTABLE (Organic)";
@@ -190,4 +217,57 @@ public class MainActivity extends AppCompatActivity {
                 return "SCANNING WASTE..."+mlKitLabel;
         }
     }
+
+    private void showDetailsSheet(String label, String category) {
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+
+        android.view.View view = getLayoutInflater().inflate(R.layout.layout_scan_result, null);
+
+        TextView tvTitle = view.findViewById(R.id.tvDetectedObject);
+        TextView tvInfo = view.findViewById(R.id.tvInstructions);
+        Button btnDone = view.findViewById(R.id.btnConfirmLog);
+
+        tvTitle.setText(label);
+        String instructions = mapToRecycling(label); // Reusing existing mapping logic
+        tvInfo.setText("Instructions: " + instructions);
+
+        // DYNAMIC BUTTON COLOR LOGIC
+
+        if(instructions.contains("COMPOSTABLE")) {
+            btnDone.setBackgroundColor(android.graphics.Color.GREEN);
+            btnDone.setText("Done (Compost)");
+        }else if (instructions.contains("RECYCLE")){
+            btnDone.setBackgroundColor(android.graphics.Color.BLUE);
+            btnDone.setText("Done (Recycle)");
+        }else if (instructions.contains("HAZARDOUS")){
+            btnDone.setBackgroundColor(android.graphics.Color.BLACK);
+            btnDone.setText("Done");
+        }else{
+            btnDone.setBackgroundColor(android.graphics.Color.GRAY);
+            btnDone.setText("close");
+        }
+        // New: save to History only when this button is clicked
+        btnDone.setOnClickListener(v ->{
+                new Thread(()->{
+                    try{
+                        ///creating the item object
+                        ScannedItem newItem = new ScannedItem(label, instructions, System.currentTimeMillis());
+
+                        /// Showing a toast on the UI thread to confirm
+                        runOnUiThread(()->{
+                            Toast.makeText(MainActivity.this, "Item logged to history!", Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }).start();
+    });
+
+        dialog.setContentView(view);
+        dialog.setOnDismissListener(d -> isSheetVisible = false);
+        dialog.show();
+    }
 }
+
