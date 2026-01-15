@@ -16,6 +16,7 @@ import java.util.ArrayList;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,11 +42,11 @@ import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
 
+    private boolean isSheetVisible = false;
     private ObjectDetector objectDetector;
     private GraphicOverlay graphicOverlay;
     private PreviewView previewView;
     private Button historyButton;
-    private boolean isSheetVisible = false;
 
     // A modern way to ask for permissions in 2026
     private final ActivityResultLauncher<String> requestPermissionLauncher =
@@ -151,28 +152,31 @@ public class MainActivity extends AppCompatActivity {
                                     // telling the object the image size (for coordinate scaling)
                                     // we use width/height of the imageProxy
                                     android.util.Log.d("EcoLens", "Objects found: " + detectedObjects.size());
-                                    graphicOverlay.setConfiguration(imageProxy.getWidth(), imageProxy.getHeight());
 
-                                    List<RectF> boxes = new ArrayList<>();
-                                    List<String> labels = new ArrayList<>();
+                                    if(!isSheetVisible){
+                                        graphicOverlay.setConfiguration(imageProxy.getWidth(), imageProxy.getHeight());
 
-                                    for(DetectedObject obj: detectedObjects){
-                                        // Adding the bounding box of the detected object
-                                        boxes.add(new RectF(obj.getBoundingBox()));
+                                        List<RectF> boxes = new ArrayList<>();
+                                        List<String> labels = new ArrayList<>();
 
-                                        //getting classification label (if available)
-                                        String detectedLabel = "Unknown Item";
-                                        //SAFE CHECK: Ensure labels exist before accessing them
-                                        if(!obj.getLabels().isEmpty()){
-                                            detectedLabel = obj.getLabels().get(0).getText();
-                                             //like "food", "Fashion Good"
+                                        for(DetectedObject obj: detectedObjects){
+                                            // Adding the bounding box of the detected object
+                                            boxes.add(new RectF(obj.getBoundingBox()));
+
+                                            //getting classification label (if available)
+                                            String detectedLabel = "Unknown Item";
+                                            //SAFE CHECK: Ensure labels exist before accessing them
+                                            if(!obj.getLabels().isEmpty()){
+                                                detectedLabel = obj.getLabels().get(0).getText();
+                                                //like "food", "Fashion Good"
+                                            }
+
+                                            // Logic: Map the general label to a recycling category
+                                            labels.add(mapToRecycling((detectedLabel)));
                                         }
-
-                                        // Logic: Map the general label to a recycling category
-                                        labels.add(mapToRecycling((detectedLabel)));
+                                        //pushing the boxes to our GraphicOverlay to draw them
+                                        graphicOverlay.updateObjects(boxes, labels);
                                     }
-                                    //pushing the boxes to our GraphicOverlay to draw them
-                                    graphicOverlay.updateObjects(boxes, labels);
                                 })
                                 .addOnFailureListener(e -> e.printStackTrace())
                                 .addOnCompleteListener(result -> {
@@ -219,6 +223,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showDetailsSheet(String label, String category) {
+        isSheetVisible = true;
         com.google.android.material.bottomsheet.BottomSheetDialog dialog =
                 new com.google.android.material.bottomsheet.BottomSheetDialog(this);
 
@@ -249,18 +254,23 @@ public class MainActivity extends AppCompatActivity {
         }
         // New: save to History only when this button is clicked
         btnDone.setOnClickListener(v ->{
+            //Capturing values into final variables for the thread
+            final String finalLabel = label;
+            final String finalInstructions = instructions;
                 new Thread(()->{
                     try{
                         ///creating the item object
-                        ScannedItem newItem = new ScannedItem(label, instructions, System.currentTimeMillis());
-
+//                        AppDatabase db = AppDatabase.getInstance(MainActivity.this);
+                        AppDatabase db = AppDatabase.getInstance(getApplicationContext());
+                        ScannedItem newItem = new ScannedItem(finalLabel, finalInstructions, System.currentTimeMillis());
+                        db.scanDao().insert(newItem);
                         /// Showing a toast on the UI thread to confirm
                         runOnUiThread(()->{
                             Toast.makeText(MainActivity.this, "Item logged to history!", Toast.LENGTH_SHORT).show();
                             dialog.dismiss();
                         });
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e("EcoLens", "Database Insert Failed",e);
                     }
                 }).start();
     });
